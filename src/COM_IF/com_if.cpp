@@ -11,8 +11,8 @@ COM_IF::COM_IF()
 void COM_IF::get_cmd(){
     char command[255];
     
-    if(Serial.available() > 1){
-    delay(10);
+    while(!Serial.available());
+    delay(100);
 
     int i = 0;
     while(Serial.available()){
@@ -20,14 +20,11 @@ void COM_IF::get_cmd(){
       command[i] = Serial.read();
       //Serial.print(command[i]);
       i++;
-      }
-      command[i] = 0;
-      Serial.print(command);
 
     }
-    else{
-      return;
-      }
+    
+    command[i] = 0;
+    Serial.print(command);
 
   //Command to flash incoming file
   if(strcmp((const char*)cmd_flash_file,(const char*)command) == 0){
@@ -56,23 +53,58 @@ void COM_IF::get_cmd(){
 }
 
 void COM_IF::wait_for_file(){
+
+  /*
+    The program decodes ASCII string to bytes:
+    [char][char][space-separator] -> [byte]
+    ...
+    example
+    [F][F][ ] -> [FF]
+  
+
+  
+  */
+
   Serial.println("waiting for hex file");
   uint16_t addr = 0;
   while(Serial.available() < 1);
   delay(500);
   Serial.println("Flashing...");
+  uint8_t new_line_ctr = 0;
 
   while(Serial.available() > 0){
 
-    uint8_t data = Serial.read();
-    write_byte(data,  addr);
+    //Take first byte from ASCII
+    char byte_str[2];
 
-    char tmp_out[16];
-    sprintf(tmp_out,"0x%04X 0x%02X ",addr,data);
-    Serial.println(tmp_out);
+    byte_str[0] = Serial.read();
+    byte_str[1] = Serial.read();
 
 
+    uint8_t byte_to_flash = strtol((const char*)byte_str,nullptr,16);
+    write_byte(byte_to_flash,addr);
+    
+    delay(10);
+    uint8_t data_out;
+    read_byte(data_out,addr);
+
+    char str_out[64];
+    sprintf(str_out," 0x%04X 0x%02X vs 0x%02X ->",addr,byte_to_flash,data_out);
+    Serial.print(str_out);
+
+    if(byte_to_flash != data_out){
+          Serial.println();
+          Serial.println("Error during flashing!!! verification un-match, quitting");
+          Serial.println("    at address:");
+          Serial.print(str_out);
+          return;
+    }
+    //Read the incoming space away
+    Serial.print (Serial.read());
+    Serial.println();
     addr++;
+    
+    delay(0);
   }
     char str_out[64];
     sprintf(str_out,"Done %d bytes flashed",addr);
@@ -83,7 +115,7 @@ void COM_IF::wait_for_file(){
 void COM_IF::read_from_EEPROM(){
 
     //Wait for parameter [ADDRES]
-    Serial.println("Give start address (hex)");
+    Serial.println("Give start address (dec) or (0xhex)");
     while(Serial.available() < 1);
     delay(500);
     char address_str[50];
@@ -94,10 +126,12 @@ void COM_IF::read_from_EEPROM(){
     }
 
     uint16_t address = (uint16_t)strtol(address_str, NULL, 0);
-    Serial.print("Got address:");
-    Serial.println(address);
 
-    Serial.println("How many bytes to read? (hex)");
+    char tmp_msg[64];
+    sprintf(tmp_msg,"Got address: 0x%04X",address);
+    Serial.println(tmp_msg);
+
+    Serial.println("How many bytes to read? (dec) or (0xhex)");
     while(Serial.available() < 1);
     delay(500);
 
@@ -145,8 +179,9 @@ void COM_IF::help_msg()
 
     Serial.println("flash-file");
     Serial.println("read-eeprom");
-    Serial.println("help");
     Serial.println("write-test");
+    Serial.println("help");
+
 }
  void COM_IF::run_write_test(){
     uint8_t *out;    

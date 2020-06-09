@@ -5,6 +5,7 @@
 
 void main_loop(void);
 void entry_point(void);
+void welcome();
 
 void setup(){}
 void loop(){entry_point();}
@@ -12,9 +13,16 @@ COM_IF m_com;
 
 void entry_point(){
 
+#define V_MAJOR 0
+#define V_MINOR 0
+#define V_PATCH 0
   //Init
   Serial.begin(115200);
-  Serial.println("starting...");
+
+
+  welcome();
+  m_com.help_msg();
+
   //Address is always OUTPUT
   for(int i; i < NUM_ADDRS;i++){
       pinMode(ADDR[i],OUTPUT);
@@ -58,3 +66,13 @@ m_com.get_cmd();
 
 }
 
+void welcome(){
+
+  Serial.println("EEPROM flasher for AT28C256");
+  char tmp_intro[127];
+  sprintf(tmp_intro,"Version: %d.%d.%d",V_MAJOR,V_MINOR,V_PATCH);
+  Serial.println(tmp_intro);
+  Serial.println("Joeli Pikkarainen Finland 2020");
+  Serial.println("https://github.com/JoeliPikkarainen/AT28C256");
+
+}
