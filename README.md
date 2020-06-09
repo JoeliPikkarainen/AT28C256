@@ -7,15 +7,14 @@ DONE: Working test function to fill EEPROM with single value and verify
 
 DONE: Fixed a bug caused by wrong ADDRESS pin setup, write, read works now
 
+DONE: Make COM_IF for Arduino
+
+
 TODO: Add possibility send .hex file from Serial Monitor to Arduino and program the eeprom
+		Current probelm: arduinos serial buffer fills up faster than it can do writes.
 
-TODO: Make COM_IF for Arduino, needed functions: 
 
-void set_start_address(uint16_t address)
-
-bool program(char * hexfile,bool verify)
-
-bool verify(char* hexfile, uint16_t start_address)
+TODO: Write simple python script to sequence the file upload
 
 
 ## Connections Arduino to AT28C256
