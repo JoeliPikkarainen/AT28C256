@@ -12,7 +12,7 @@ void COM_IF::get_cmd(){
     char command[255];
     
     while(!Serial.available());
-    delay(100);
+    delay(1000);
 
     int i = 0;
     while(Serial.available()){
@@ -44,6 +44,10 @@ void COM_IF::get_cmd(){
     run_write_test();  
   }
 
+  else if(strcmp((const char*)cmd_flash_rst_v,(const char*)command) == 0){
+    flash_reset_vector();  
+  }
+
 
   else{
     
@@ -54,58 +58,65 @@ void COM_IF::get_cmd(){
 
 void COM_IF::wait_for_file(){
 
-  /*
-    The program decodes ASCII string to bytes:
-    [char][char][space-separator] -> [byte]
-    ...
-    example
-    [F][F][ ] -> [FF]
-  
-
-  
-  */
 
   Serial.println("waiting for hex file");
   uint16_t addr = 0;
   while(Serial.available() < 1);
   delay(500);
   Serial.println("Flashing...");
-  uint8_t new_line_ctr = 0;
 
-  while(Serial.available() > 0){
+  while(Serial.available() > 0 || addr < EEPROM_SIZE - 1){
 
-    //Take first byte from ASCII
-    char byte_str[2];
+    //Wait until Serial if has lsb and msb ready
+    while(Serial.available() < 2);
 
-    byte_str[0] = Serial.read();
-    byte_str[1] = Serial.read();
+    uint8_t lsb = Serial.read();
+    uint8_t msb = Serial.read();
 
-
-    uint8_t byte_to_flash = strtol((const char*)byte_str,nullptr,16);
-    write_byte(byte_to_flash,addr);
     
+    write_byte(msb,addr);
     delay(10);
-    uint8_t data_out;
-    read_byte(data_out,addr);
 
-    char str_out[64];
-    sprintf(str_out," 0x%04X 0x%02X vs 0x%02X ->",addr,byte_to_flash,data_out);
-    Serial.print(str_out);
+    write_byte(lsb,addr+1);
+    delay(10);
 
-    if(byte_to_flash != data_out){
-          Serial.println();
-          Serial.println("Error during flashing!!! verification un-match, quitting");
-          Serial.println("    at address:");
-          Serial.print(str_out);
+    uint8_t msb_out;
+    uint8_t lsb_out;
+    read_byte(msb_out,addr);
+    delay(10);
+
+    read_byte(lsb_out,addr+1);
+    delay(10);
+
+
+    
+    if(msb != msb_out || lsb != lsb_out){
+          Serial.println("Error during flashing!!! verification un-match");
+          char err_out[64];
+          sprintf(err_out, "    at address 0x%04X",addr);
+          Serial.println(err_out);
           return;
     }
-    //Read the incoming space away
-    Serial.print (Serial.read());
-    Serial.println();
-    addr++;
-    
-    delay(0);
+#ifdef REPORT_OUT
+    else{
+        char report_out[64];
+        sprintf(report_out,"0x%04X %02X%02X", addr,msb,lsb);
+        Serial.println(report_out);
+       }
+
+    char report_progress[16];
+    sprintf(report_progress,"%d / %d",addr,EEPROM_SIZE);
+    Serial.println(report_progress); 
+#endif
+
+
+
+
+    Serial.println(addr);
+    addr+=2;
   }
+    Serial.print("done");
+    delay(200);
     char str_out[64];
     sprintf(str_out,"Done %d bytes flashed",addr);
     Serial.println(str_out);
@@ -130,6 +141,11 @@ void COM_IF::read_from_EEPROM(){
     char tmp_msg[64];
     sprintf(tmp_msg,"Got address: 0x%04X",address);
     Serial.println(tmp_msg);
+
+    if(address > EEPROM_SIZE){
+      Serial.println("Error max address is 0x8000 ");
+      return;
+    }
 
     Serial.println("How many bytes to read? (dec) or (0xhex)");
     while(Serial.available() < 1);
@@ -168,6 +184,10 @@ void COM_IF::read_from_EEPROM(){
         }
 
         n++;
+        if(n > EEPROM_SIZE){
+          Serial.println("\n Maximum address reached, quiting..");
+          return;
+        }
 
     }
     Serial.println("\nDONE");
@@ -180,6 +200,7 @@ void COM_IF::help_msg()
     Serial.println("flash-file");
     Serial.println("read-eeprom");
     Serial.println("write-test");
+    Serial.println("flash-reset-vector");
     Serial.println("help");
 
 }
@@ -199,3 +220,14 @@ void COM_IF::help_msg()
     Serial.println("Done");
 
  }
+void COM_IF::flash_reset_vector(){
+
+    Serial.println("Flashing reset vector...");
+    uint8_t reset_vector[4] { 0x80, 0x00 , 0x00, 0x00};
+    uint16_t start_address = EEPROM_SIZE - 4;
+    for(int i = 0; i < 4 ;i++){
+      write_byte(reset_vector[i],start_address+i);
+      delay(10);
+    }
+    Serial.println("DONE");
+}
