@@ -3,6 +3,10 @@
 #include "EEPROM_UTILS/EEPROM_UTILS.h"
 #include "COM_IF/com_if.h"
 
+#define V_MAJOR 0
+#define V_MINOR 0
+#define V_PATCH 0
+
 void main_loop(void);
 void entry_point(void);
 void welcome();
@@ -13,9 +17,7 @@ COM_IF m_com;
 
 void entry_point(){
 
-#define V_MAJOR 0
-#define V_MINOR 0
-#define V_PATCH 0
+
   //Init
   Serial.begin(115200);
 
