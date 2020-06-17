@@ -1,4 +1,4 @@
-import serial, string, time, sys
+import serial, string, time, sys, os
 
 
 def prnt(to_out):
@@ -75,14 +75,22 @@ def py_internal_do_flash(file_data):
 
 	use_serial()
 
-ser = serial.Serial('/dev/ttyACM0',115200,8,'N',1,timeout=1)
-EEPROM_SIZE = 36000
+
 
 print ("----------")
-print ("Python Serial Commander for project 28C256")
+print ("Python Serial Commander for project AT28C256")
+print ("sources: https://github.com/JoeliPikkarainen/AT28C256")
 print ("use \"pyfuncs\" to enter PC command interface")
 print ("Connecting to tty device....")
 print ("----------")
+
+if os.path.isfile("/dev/ttyACM0"):
+	ser = serial.Serial('/dev/ttyACM0',115200,8,'N',1,timeout=1)
+else:
+	print("No device found at \"/dev/ttyACM0\"... quiting")
+	sys.exit(1)
+	
+EEPROM_SIZE = 32768
 
 
 use_serial()
