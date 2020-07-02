@@ -18,12 +18,12 @@ void COM_IF::get_cmd(){
     while(Serial.available()){
       
       command[i] = Serial.read();
-      //Serial.print(command[i]);
       i++;
 
     }
     
     command[i] = 0;
+    Serial.println("EEPROM-FLASHER: Got command:");
     Serial.print(command);
 
   //Command to flash incoming file
@@ -195,6 +195,7 @@ void COM_IF::read_from_EEPROM(){
 
 void COM_IF::help_msg()
 {
+    Serial.println("EEPROM-FLASHER");
     Serial.println("----COMMANDS----");
 
     Serial.println("flash-file");
@@ -205,7 +206,8 @@ void COM_IF::help_msg()
 
 }
  void COM_IF::run_write_test(){
-    uint8_t *out;    
+    uint8_t out;
+   
     uint8_t data_in[8] = { 0x00, 0x01,0x02 ,0x03,0x04,0x05,0x06,0x07};
 
     //uint8_t data_in[8] = { 0x00, 0x01,0x00 ,0x00,0x00,0x00,0x00,0x00};
@@ -213,7 +215,7 @@ void COM_IF::help_msg()
     write_test(8,data_in);
     Serial.println("-------");
 
-    read_test(8,out);
+    read_test(8,&out);
     Serial.println("-------");
 
     delay(1000);
