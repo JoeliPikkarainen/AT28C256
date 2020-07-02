@@ -62,7 +62,7 @@ void COM_IF::wait_for_file(){
   Serial.println("waiting for hex file");
   uint16_t addr = 0;
   while(Serial.available() < 1);
-  delay(500);
+  delay(1);
   Serial.println("Flashing...");
 
   while(Serial.available() > 0 || addr < EEPROM_SIZE - 1){
@@ -93,19 +93,24 @@ void COM_IF::wait_for_file(){
     if(msb != msb_out || lsb != lsb_out){
           Serial.println("Error during flashing!!! verification un-match");
           char err_out[64];
-          sprintf(err_out, "    at address 0x%04X",addr);
+          sprintf(err_out, "    at address 0x%04X\n",addr);
           Serial.println(err_out);
           return;
     }
-#ifdef REPORT_OUT
     else{
         char report_out[64];
-        sprintf(report_out,"0x%04X %02X%02X", addr,msb,lsb);
+
+        sprintf(report_out,"0x%04X %02X", addr -1 ,msb);
         Serial.println(report_out);
+
+        sprintf(report_out,"0x%04X %02X", addr ,lsb);
+        Serial.println(report_out);
+
        }
 
+#ifdef REPORT_OUT
     char report_progress[16];
-    sprintf(report_progress,"%d / %d",addr,EEPROM_SIZE);
+    sprintf(report_progress,"%d / %d\n",addr,EEPROM_SIZE);
     Serial.println(report_progress); 
 #endif
 

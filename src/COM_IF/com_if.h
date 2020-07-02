@@ -3,7 +3,7 @@
 #include <Arduino.h>
 
 #define PRINT_BLOCK 7
-#define REPORT_OUT
+//#define REPORT_OUT
 class COM_IF
 {
 
