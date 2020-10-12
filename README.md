@@ -6,6 +6,8 @@ TODO: Refactor the com protocol, make it simple.
 
 ## Connections Arduino to AT28C256
 
+### Address
+
 | Arduino       | AT28C256      | TYPE  |
 | ------------- |:-------------:| -----:|
 | 22| A0 | ADDRESS |
