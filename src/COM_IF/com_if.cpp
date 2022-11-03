@@ -98,15 +98,8 @@ void COM_IF::wait_for_file(){
           return;
     }
     else{
-        char report_out[64];
 
-        sprintf(report_out,"0x%04X %02X", addr -1 ,msb);
-        Serial.println(report_out);
-
-        sprintf(report_out,"0x%04X %02X", addr ,lsb);
-        Serial.println(report_out);
-
-       }
+    }
 
 #ifdef REPORT_OUT
     char report_progress[16];
@@ -114,10 +107,9 @@ void COM_IF::wait_for_file(){
     Serial.println(report_progress); 
 #endif
 
+	Serial1.write(msb_out);
+	Serial1.write(lsb_out);
 
-
-
-    Serial.println(addr);
     addr+=2;
   }
     Serial.print("done");
@@ -148,13 +140,13 @@ void COM_IF::read_from_EEPROM(){
     Serial.println(tmp_msg);
 
     if(address > EEPROM_SIZE){
-      Serial.println("Error max address is 0x8000 ");
+      Serial.print("Error max address is 0x8000 \n");
       return;
     }
 
-    Serial.println("How many bytes to read? (dec) or (0xhex)");
+    Serial.print("How many bytes to read? (dec) or (0xhex)\n");
     while(Serial.available() < 1);
-    delay(500);
+    delay(2000);
 
     i = 0;
     char bytes_to_read_str[50];
@@ -163,8 +155,7 @@ void COM_IF::read_from_EEPROM(){
         i++;
     }
     uint16_t bytes = (uint16_t)strtol(bytes_to_read_str, NULL, 0);
-    Serial.print("Bytes to read:");
-    Serial.println(bytes);
+    Serial.print("Starting...\n");
 
     //Do the reading
     uint8_t block_ctr = 0;
@@ -174,23 +165,24 @@ void COM_IF::read_from_EEPROM(){
         if(block_ctr == 0){
             char tmp_block[16];
             sprintf(tmp_block,"0x%04X : ",n);
-            Serial.print(tmp_block);
+            //Serial.print(tmp_block);
         }
         uint8_t data;
         char tmp_data[16];
         read_byte(data,n);
         sprintf(tmp_data," 0x%02X ",data);
-        Serial.print(tmp_data);
+		Serial.print(data);
+        //Serial.print(tmp_data);
 
         block_ctr++;
         if(block_ctr > PRINT_BLOCK){
             block_ctr = 0;
-            Serial.println();
+            //Serial.println();
         }
 
         n++;
         if(n > EEPROM_SIZE){
-          Serial.println("\n Maximum address reached, quiting..");
+          Serial.println("Maximum address reached, quiting..");
           return;
         }
 

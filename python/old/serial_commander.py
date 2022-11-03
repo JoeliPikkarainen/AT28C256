@@ -2,6 +2,8 @@ import serial, string, time, sys, os
 
 sys.path.append('.')
 import command_handler as ch
+import serial_utils as su
+
 def prnt(to_out):
 	sys.stdout.write(str(to_out))
 	sys.stdout.flush()
@@ -13,7 +15,7 @@ def use_serial():
 		output = ser.readline()
 		output = output.decode()
 		if output != "b''\n":
-			prnt(output)
+			serial.prnt(output)
 	inp = input()
 
 	if inp == "pyfuncs":
@@ -25,6 +27,7 @@ def use_serial():
 		ser.write(bytes(inpendl.encode()))
 		use_serial()
 
+	use_serial()
 
 
 def py_funcs():
@@ -52,22 +55,17 @@ def py_flash_file():
 
 def py_internal_do_flash(file_data):
 	prnt("py_internal_do_flash")
-	prnt(file_data)
 	ser.write(bytes("flash-file\n".encode()))
 	time.sleep(2)
 	resp = ser.readline()
 	prnt(resp.decode)
 	time.sleep(2)
-	sequencer = 0
-	sequencer_limit = 64
 
-	##Sequencing method, write 2 bytes, verify 2 bytes.
 	for i in range(len(file_data)):
 		byte1 = file_data[i]
 		byte2 = file_data[i+1]
-		#prnt(byte)
-		prnt("addr %d data %d" % (i,byte1))
-		prnt("addr %d data %d" % (i,byte2))
+		prnt("addr %d data %d \n" % (i,byte1))
+		prnt("addr %d data %d \n" % (i,byte2))
 
 		print()
 		ser.write(byte1)
@@ -82,8 +80,8 @@ def py_internal_do_flash(file_data):
 
 		prnt("e addr %d data %d" % (i,byte1e))
 		prnt("e addr %d data %d" % (i,byte2e))
-		
 
+	print("File flashing done!")
 	use_serial()
 
 
@@ -97,6 +95,7 @@ print ("----------")
 
 if os.path.exists("/dev/ttyACM0"):
 	ser = serial.Serial('/dev/ttyACM0',115200,8,'N',1,timeout=1)
+	serial = su.SerialUtils(ser)
 else:
 	print("No device found at \"/dev/ttyACM0\"... quiting")
 	sys.exit(1)
