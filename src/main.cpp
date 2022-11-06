@@ -4,7 +4,7 @@
 #include "COM_IF/com_if.h"
 
 #define V_MAJOR 0
-#define V_MINOR 0
+#define V_MINOR 1
 #define V_PATCH 0
 
 void main_loop(void);

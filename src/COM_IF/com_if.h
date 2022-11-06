@@ -20,12 +20,14 @@ public:
     void help_msg();
     void run_write_test();
     void flash_reset_vector();
+	void write_to_addr();
 
     const char* cmd_flash_file  =   "flash-file\n";
     const char* cmd_read_EEPROM =   "read-eeprom\n";
     const char* cmd_help        =   "help\n";
     const char* cmd_write_test  =   "write-test\n";  
     const char* cmd_flash_rst_v =   "flash-reset-vector\n";
+	const char* cmd_write_to_addr = "wta\n";
 
 private:
 

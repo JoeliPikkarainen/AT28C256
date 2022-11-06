@@ -12,13 +12,17 @@ void COM_IF::get_cmd(){
     char command[255];
     
     while(!Serial.available());
-    delay(1000);
+    delay(25);
 
     int i = 0;
     while(Serial.available()){
       
       command[i] = Serial.read();
-      i++;
+	  i++;
+
+	  if(command[i-1] == '\n'){
+		break;
+	  }
 
     }
     
@@ -47,17 +51,18 @@ void COM_IF::get_cmd(){
   else if(strcmp((const char*)cmd_flash_rst_v,(const char*)command) == 0){
     flash_reset_vector();  
   }
-
+  else if(strcmp((const char*)cmd_write_to_addr,(const char*)command) == 0){
+    write_to_addr();  
+  }
 
   else{
     
     Serial.println("Invalid Command");
-    }
+  }
     return;
 }
 
 void COM_IF::wait_for_file(){
-
 
   Serial.println("waiting for hex file");
   uint16_t addr = 0;
@@ -65,28 +70,27 @@ void COM_IF::wait_for_file(){
   delay(1);
   Serial.println("Flashing...");
 
-  while(Serial.available() > 0 || addr < EEPROM_SIZE - 1){
+  while(Serial.available() > 0 || addr < 100 - 1){
 
     //Wait until Serial if has lsb and msb ready
     while(Serial.available() < 2);
 
     uint8_t lsb = Serial.read();
     uint8_t msb = Serial.read();
-
-    
+   
     write_byte(msb,addr);
-    delay(10);
+    delay(15);
 
     write_byte(lsb,addr+1);
-    delay(10);
+    delay(15);
 
     uint8_t msb_out;
     uint8_t lsb_out;
     read_byte(msb_out,addr);
-    delay(10);
+    delay(15);
 
     read_byte(lsb_out,addr+1);
-    delay(10);
+    delay(15);
 
 
     
@@ -100,10 +104,16 @@ void COM_IF::wait_for_file(){
     else{
         char report_out[64];
 
-        sprintf(report_out,"0x%04X %02X", addr -1 ,msb);
+        sprintf(report_out,">>0x%04X 0x%02X", addr,msb);
         Serial.println(report_out);
 
-        sprintf(report_out,"0x%04X %02X", addr ,lsb);
+		sprintf(report_out,"<<0x%04X 0x%02X", addr,msb_out);
+        Serial.println(report_out);
+
+        sprintf(report_out,">>0x%04X 0x%02X", addr +1,lsb);
+        Serial.println(report_out);
+
+        sprintf(report_out,"<<0x%04X 0x%02X", addr +1,lsb_out);
         Serial.println(report_out);
 
        }
@@ -114,10 +124,7 @@ void COM_IF::wait_for_file(){
     Serial.println(report_progress); 
 #endif
 
-
-
-
-    Serial.println(addr);
+    //Serial.println(addr);
     addr+=2;
   }
     Serial.print("done");
@@ -152,7 +159,7 @@ void COM_IF::read_from_EEPROM(){
       return;
     }
 
-    Serial.println("How many bytes to read? (dec) or (0xhex)");
+    Serial.println("How many bytes to read? (dec) or (0xhex)\r\n");
     while(Serial.available() < 1);
     delay(500);
 
@@ -207,6 +214,8 @@ void COM_IF::help_msg()
     Serial.println("read-eeprom");
     Serial.println("write-test");
     Serial.println("flash-reset-vector");
+	Serial.println("wta\n <ADDRESS> <BYTE>");
+
     Serial.println("help");
 
 }
@@ -237,4 +246,57 @@ void COM_IF::flash_reset_vector(){
       delay(10);
     }
     Serial.println("DONE");
+}
+
+void COM_IF::write_to_addr(){
+	//When this command is received, the next 2 lines should be encoded string of the bytes
+
+	//Wait for data
+	while(Serial.available() < 1);
+
+	//read data
+	String instring = Serial.readStringUntil('\n');
+	String addrstring;
+	String datastring;
+
+	char tmpchar = '1';
+	unsigned int idx = 0;
+	while(idx < instring.length()){
+		tmpchar = instring.charAt(idx);
+		idx++;
+		if(tmpchar == ' '){
+			break;
+		}
+		addrstring.concat(tmpchar);
+	}
+
+	while(idx < instring.length()){
+		tmpchar = instring.charAt(idx);
+		idx++;
+		if(tmpchar == '\n'){
+			break;
+		}
+		datastring.concat(tmpchar);
+	}
+
+	//Decode data:<address><space><data><\n>
+	
+	uint8_t addres_u8 = (uint8_t)addrstring.toInt();
+	uint8_t data_u8 = (uint8_t)datastring.toInt();
+	write_byte(data_u8,addres_u8);
+
+	char outinter[128];
+	//sprintf(outinter,"wta: 0x%04X 0x%02X",addres_u8, data_u8);
+	//Serial.println(outinter);
+	delay(15);
+	uint8_t dout;
+	read_byte(dout,addres_u8);
+
+	//Verify
+	if(data_u8 != dout){
+		char output[128];
+		sprintf(output,"MISSMATCH A: 0x%04X D: 0x%02X 0x%02X",addres_u8,data_u8,dout);
+		Serial.println(output);
+	}
+
 }

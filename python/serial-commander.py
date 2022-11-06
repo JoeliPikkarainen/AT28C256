@@ -1,4 +1,4 @@
-import serial, string, time, sys, os
+import serial, string, time, sys, os, struct, time
 
 def prnt(to_out):
 	sys.stdout.write(str(to_out))
@@ -27,11 +27,11 @@ def use_serial():
 
 def py_funcs():
 	print("Python methods:")
-	print("py-flash-file")
+	print("1. py-flash-file")
 
 	inp = input()
 
-	if inp == "py-flash-file":
+	if inp == "py-flash-file" or inp == "1" :
 		py_flash_file()
 	else:
 		print("Command not recognized")
@@ -42,41 +42,49 @@ def py_funcs():
 def py_flash_file():
 	print("path to file:")
 	filepath = input()
-
 	file = open(filepath,"rb")
-
 	hex_data = file.read(EEPROM_SIZE)
 	py_internal_do_flash(hex_data)
 
 def py_internal_do_flash(file_data):
-	prnt("py_internal_do_flash")
-	ser.write(bytes("flash-file\n".encode()))
+	prnt("py_internal_do_flash: size bytes %d : \r\n" % (len(file_data)))
+	#ser.write(bytes("flash-file\n".encode()))
 	time.sleep(2)
 	resp = ser.readline()
 	prnt(resp.decode)
 	time.sleep(2)
 	sequencer = 0
-	sequencer_limit = 64
-
+	sequencer_limit = 6
+	precenter = 0;
+	errorCounter = {}
+	timerBegin = time.perf_counter()
 	for i in range(len(file_data)):
 		byte = file_data[i]
-		#prnt(byte)
-		prnt("addr %d data %d" % (i,byte))
-		print()
-		ser.write(byte)
+		byteStr = ("wta\n%d %d\n" % (i,byte))
+		prnt("Writing serial\r\n")
+		ser.write(bytes(byteStr.encode()))
 		sequencer+=1
 		if sequencer > sequencer_limit:
-			prnt("\nSequencer")
+			#prnt("\nSequencer")
+			time.sleep(0.0001)
 			sequencer = 0
 			output = ' '
 			while output != "":
 				output = ser.readline()
 				output = output.decode()
 				prnt(output)
-				if output == "done":
-					return 0
-			time.sleep(0.001)
+				if "MISSMATCH" in output or "Invalid" in output:
+					errorCounter.push(i)
 
+
+		precenter = (i / len(file_data)) * 100
+		timerEnd = time.perf_counter()
+		tookSeconds = timerEnd - timerBegin
+		prnt("prog: %f %% errors:%d time: %f\n\r" % (precenter,len(errorCounter),tookSeconds))
+
+	timerEnd = time.perf_counter()
+	tookSeconds = timerEnd - timerBegin
+	prnt("Finished with %d error, took %f seconds\r\n" % (len(errorCounter),tookSeconds))
 	use_serial()
 
 
