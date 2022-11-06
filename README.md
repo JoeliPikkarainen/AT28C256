@@ -1,86 +1,50 @@
+
 # AT28C256
 This is project to program AT28C256 EEPROM with ATmega 2560
 
-DONE: Working write and read functions
-
-DONE: Working test function to fill EEPROM with single value and verify
-
-DONE: Fixed a bug caused by wrong ADDRESS pin setup, write, read works now
-
-DONE: Make COM_IF for Arduino
-
-
-TODO: Add possibility send .hex file from Serial Monitor to Arduino and program the eeprom
-		Current probelm: arduinos serial buffer fills up faster than it can do writes.
-
-
-TODO: Write simple python script to sequence the file upload
-
+TODO: Refactor the com protocol, make it simple.
 
 ## Connections Arduino to AT28C256
 
 ### Address
 
-22    -   A0
-
-24    -   A1
-
-26    -   A2
-
-28    -   A3
-
-30    -   A4
-
-32    -   A5
-
-34    -   A6
-
-36    -   A7
-
-38    -   A8
-
-40    -   A9
-
-42    -   A10
-
-44    -   A11
-
-46    -   A12
-
-48    -   A13
-
-50    -   A14
-
-52    -   NC
-
-48    -   NC
+| Arduino       | AT28C256      | TYPE  |
+| ------------- |:-------------:| -----:|
+| 22| A0 | ADDRESS |
+| 24| A1 | ADDRESS |
+| 26| A2 | ADDRESS |
+| 28| A3 | ADDRESS |
+| 30| A4 | ADDRESS |
+| 32| A5 | ADDRESS |
+| 34| A6 | ADDRESS |
+| 36| A7 | ADDRESS |
+| 38| A8 | ADDRESS |
+| 40| A9 | ADDRESS |
+| 42| A10 | ADDRESS |
+| 44| A11| ADDRESS |
+| 46| A12| ADDRESS |
+| 48| A13| ADDRESS |
+| 50| A14| ADDRESS |
 
 ### I/O
-
-31    -   I/O0
-
-33    -   I/O1
-
-35    -   I/O2
-
-37    -   I/O3
-
-39    -   I/O4
-
-41    -   I/O5
-
-43    -   I/O6
-
-45    -   I/O7
-
+| Arduino       | AT28C256      | TYPE  |
+| ------------- |:-------------:| -----:|
+| 31| I/O0 | DATA |
+| 33| I/O1 | DATA |
+| 35| I/O2 | DATA |
+| 37| I/O3 | DATA |
+| 39| I/O4 | DATA |
+| 41| I/O5 | DATA |
+| 43| I/O6 | DATA |
+| 45| I/O7 | DATA |
 
 ### Signals
 
-5   -     WED
-
-2   -     OED
-
-4   -     CED
+| Arduino       | AT28C256      | TYPE  |
+| ------------- |:-------------:| -----:|
+| 5| WED | SIGNAL |
+| 2| OED | SIGNAL |
+| 4| CED | SIGNAL |
 
 
 Power of the EEPROM is from Arduino  PWR 5V and GND
