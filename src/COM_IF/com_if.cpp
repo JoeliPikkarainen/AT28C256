@@ -10,7 +10,8 @@ COM_IF::COM_IF()
 
 void COM_IF::get_cmd(){
     char command[255];
-    
+    String cmdstring = "";
+
     while(!Serial.available());
     delay(25);
 
@@ -18,6 +19,7 @@ void COM_IF::get_cmd(){
     while(Serial.available()){
       
       command[i] = Serial.read();
+	  cmdstring += command[i];
 	  i++;
 
 	  if(command[i-1] == '\n'){
@@ -26,6 +28,7 @@ void COM_IF::get_cmd(){
 
     }
     
+	
     command[i] = 0;
     Serial.println("EEPROM-FLASHER: Got command:");
     Serial.print(command);
@@ -54,10 +57,15 @@ void COM_IF::get_cmd(){
   else if(strcmp((const char*)cmd_write_to_addr,(const char*)command) == 0){
     write_to_addr();  
   }
-
+  else if(strcmp((const char*)cmd_write_to_addr_bulk_bin,(const char*)command) == 0){
+    write_to_addr_bulk_bin();  
+  }
+  else if(cmdstring.indexOf("rfa-bulk-bin") > -1){
+    read_addr_bulk_bin_parse(cmdstring);
+  }
   else{
-    
-    Serial.println("Invalid Command");
+	String invString = "Invalid Command:" + cmdstring;
+    Serial.println(invString);
   }
     return;
 }
@@ -300,3 +308,101 @@ void COM_IF::write_to_addr(){
 	}
 
 }
+
+void COM_IF::write_to_addr_bulk_bin(){
+
+	//Parameters:<START_ADDR> <LENGTH> <DO_VERIFY>
+
+	//Wait for data
+	while(Serial.available() < 1);
+	String start_addr_s = Serial.readStringUntil(' ');
+	String length_s = Serial.readStringUntil(' ');
+	String do_verify_s = Serial.readStringUntil('\n');
+
+
+	int start_addr = start_addr_s.toInt();
+	unsigned int length = length_s.toInt();
+	int do_verify = do_verify_s.toInt();
+
+	char outbuff[128];
+	sprintf(outbuff,"write_to_addr_bulk_bin start:%d len:%d veriy:%d",start_addr,length,do_verify);
+	Serial.println(outbuff);
+
+
+	//The next data will be off binary writables
+	int errors = 0;
+	int writesDone = 0;
+	int roundIdx = 0;
+	for(int i = start_addr; writesDone < length && writesDone < EEPROM_SIZE;){
+		while(Serial.available() < 1);
+		char buff[SERIAL_RX_BUFFER_SIZE];
+		int isAvail = Serial.available();
+		isAvail = isAvail > SERIAL_RX_BUFFER_SIZE ? SERIAL_RX_BUFFER_SIZE : isAvail;
+		int bytesReady = Serial.readBytes(&buff[0],isAvail);
+
+		//Write part
+		roundIdx = i;
+		for(int j = 0; j < bytesReady && writesDone < length; j++){
+			write_byte(buff[j],roundIdx);
+			delay(15);
+			writesDone++;
+			roundIdx++;
+		}
+
+		//Verify part
+		roundIdx = i;
+		for(int j = 0; j < bytesReady; j++){
+			uint8_t out;
+			read_byte(out,roundIdx);
+			delay(15);
+			if(buff[j] != out){
+				if(do_verify){
+					errors++;
+				}
+			}
+			i++;
+			roundIdx++;
+		}
+		sprintf(outbuff,"ERROR:%d\r\n",errors);
+		Serial.print(outbuff);
+	}
+
+	sprintf(outbuff,"Errors %d From: %d",errors,writesDone);
+	Serial.println(outbuff);
+
+}
+
+void COM_IF::read_addr_bulk_bin(uint32_t start, uint32_t len){
+	
+	for(uint32_t i = 0; i < len; i++){
+		uint8_t data;
+		read_byte(data, start + i);
+		Serial.write(data);
+	}
+
+	Serial.println("read_addr_bulk_bin done");
+}
+
+void COM_IF::read_addr_bulk_bin_parse(String cmd){
+
+	String parts[4];
+	int part = 0;
+	for(int i = 0; i < cmd.length(); i++){
+		char c = cmd.charAt(i);
+		if(c == '\n' || c == ' '){
+			part++;
+			continue;
+		}
+		parts[part] += c;
+	}
+
+	uint32_t start_addr = (uint32_t)parts[1].toInt();
+	uint32_t len = (uint32_t)parts[2].toInt();
+
+	char out[127];
+	sprintf(out, "Starting read_addr_bulk_bin %d %u\r\n",start_addr,len);
+	Serial.print(out);
+	read_addr_bulk_bin(start_addr,len);
+}
+
+
